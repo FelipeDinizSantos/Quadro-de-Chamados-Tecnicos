@@ -21,7 +21,7 @@ router.get('/todos', auth, checkPerfil([3]), chamadoController.listarTodos);
 router.put('/:id/status', auth, chamadoController.atualizarStatus);
 
 // Atribuir chamado a outro usuário (com validações)
-router.put('/:id/atribuir', auth, chamadoController.atribuir);
+// router.put('/:id/atribuir', auth, chamadoController.atribuir);
 
 // Ver detalhes do chamado
 router.get('/:id', auth, chamadoController.detalhes);

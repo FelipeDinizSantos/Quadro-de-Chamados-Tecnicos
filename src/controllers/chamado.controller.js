@@ -2,13 +2,13 @@ const pool = require('../config/db');
 
 // Criar chamado
 exports.criar = async (req, res) => {
-  const { titulo, descricao, categoria_id } = req.body;
+  const { titulo, descricao, categoria_id, atribuido_funcao_tecnica_id } = req.body;
   const criado_por = req.user.id;
 
   try {
     await pool.query(
-      'INSERT INTO chamados (titulo, descricao, categoria_id, criado_por) VALUES (?, ?, ?, ?)',
-      [titulo, descricao, categoria_id, criado_por]
+      'INSERT INTO chamados (titulo, descricao, categoria_id, criado_por, atribuido_funcao_tecnica_id) VALUES (?, ?, ?, ?, ?)',
+      [titulo, descricao, categoria_id, criado_por, atribuido_funcao_tecnica_id]
     );
     res.status(201).json({ message: 'Chamado criado com sucesso' });
   } catch (err) {
@@ -29,7 +29,9 @@ exports.listarMeus = async (req, res) => {
 // Listar chamados atribuídos ao técnico
 exports.listarRecebidos = async (req, res) => {
   try {
-    const [chamados] = await pool.query('SELECT * FROM chamados WHERE atribuido_para = ?', [req.user.id]);
+    console.log(req.user);
+    console.log("ID da função técnica: "+ req.user.funcao_tecnica_id);
+    const [chamados] = await pool.query('SELECT * FROM chamados WHERE atribuido_funcao_tecnica_id = ?', [req.user.funcao_tecnica_id]);
     res.json(chamados);
   } catch (err) {
     res.status(500).json({ error: 'Erro ao listar chamados recebidos' });
@@ -40,6 +42,7 @@ exports.listarRecebidos = async (req, res) => {
 exports.listarTodos = async (req, res) => {
   try {
     const [chamados] = await pool.query('SELECT * FROM chamados');
+    
     res.json(chamados);
   } catch (err) {
     res.status(500).json({ error: 'Erro ao listar todos os chamados' });
@@ -63,20 +66,20 @@ exports.atualizarStatus = async (req, res) => {
 };
 
 // Atribuir chamado a outro usuário
-exports.atribuir = async (req, res) => {
-  const { id } = req.params;
-  const { atribuido_para } = req.body;
+// exports.atribuir = async (req, res) => {
+//   const { id } = req.params;
+//   const { atribuido_para } = req.body;
 
-  try {
-    await pool.query(
-      'UPDATE chamados SET atribuido_para = ?, atualizado_em = NOW() WHERE id = ?',
-      [atribuido_para, id]
-    );
-    res.json({ message: 'Chamado atribuído com sucesso' });
-  } catch (err) {
-    res.status(500).json({ error: 'Erro ao atribuir chamado' });
-  }
-};
+//   try {
+//     await pool.query(
+//       'UPDATE chamados SET atribuido_para = ?, atualizado_em = NOW() WHERE id = ?',
+//       [atribuido_para, id]
+//     );
+//     res.json({ message: 'Chamado atribuído com sucesso' });
+//   } catch (err) {
+//     res.status(500).json({ error: 'Erro ao atribuir chamado' });
+//   }
+// };
 
 // Detalhes do chamado
 exports.detalhes = async (req, res) => {

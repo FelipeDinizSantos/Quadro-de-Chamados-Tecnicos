@@ -1,4 +1,3 @@
-// src/controllers/usuario.controller.js
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -16,6 +15,7 @@ exports.registrar = async (req, res) => {
 
     res.status(201).json({ message: 'Usuário registrado com sucesso' });
   } catch (err) {
+    console.log(err);
     res.status(500).json({ error: 'Erro ao registrar usuário' });
   }
 };
@@ -32,7 +32,7 @@ exports.login = async (req, res) => {
     if (!match) return res.status(401).json({ error: 'Senha incorreta' });
 
     const token = jwt.sign(
-      { id: usuario.id, perfil_id: usuario.perfil_id, nome: usuario.nome },
+      { id: usuario.id, perfil_id: usuario.perfil_id, nome: usuario.nome, funcao_tecnica_id: usuario.funcao_tecnica_id },
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
@@ -43,7 +43,8 @@ exports.login = async (req, res) => {
         id: usuario.id,
         nome: usuario.nome,
         email: usuario.email,
-        perfil_id: usuario.perfil_id,
+        perfil_id: usuario.perfil_id, 
+        funcao_tecnica_id: usuario.funcao_tecnica_id
       },
     });
   } catch (err) {
@@ -53,7 +54,7 @@ exports.login = async (req, res) => {
 
 exports.perfil = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, nome, email, perfil_id FROM usuarios WHERE id = ?', [
+    const [rows] = await pool.query('SELECT id, nome, email, perfil_id, funcao_tecnica_id FROM usuarios WHERE id = ?', [
       req.user.id,
     ]);
 
