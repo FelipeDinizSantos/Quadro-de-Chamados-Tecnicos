@@ -10,10 +10,12 @@ app.use(express.json());
 const usuarioRoutes = require('./routes/usuario.routes');
 const chamadoRoutes = require('./routes/chamado.routes');
 const respostaRoutes = require('./routes/resposta.routes');
+const authRoutes = require('./routes/auth.routes');
 
 app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/chamados', chamadoRoutes);
 app.use('/api/respostas', respostaRoutes);
+app.use('/api/auth', authRoutes);
 
 app.get('/api', (req, res) => {
   res.send('API Projeto EB Rodando!');

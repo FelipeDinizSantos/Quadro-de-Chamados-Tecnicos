@@ -5,8 +5,6 @@ const usuarioController = require('../controllers/usuario.controller');
 const auth = require('../middlewares/auth');
 const checkPerfil = require('../middlewares/checkPerfil');
 
-// ROTAS DE AUTENTICAÇÃO
-router.post('/register', usuarioController.registrar);
 router.post('/login', usuarioController.login);
 
 // ROTAS PROTEGIDAS
