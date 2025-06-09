@@ -54,12 +54,11 @@ exports.listar = async (req, res) => {
 
 // Editar uma resposta existente
 exports.editar = async (req, res) => {
-  const { id } = req.params; // ID da resposta
+  const { id } = req.params; 
   const { mensagem } = req.body;
   const usuarioId = req.user.id;
 
   try {
-    // Verifica se a resposta existe e pertence ao usuário
     const [[resposta]] = await pool.query(
       'SELECT * FROM respostas_chamado WHERE id = ?',
       [id]
@@ -73,7 +72,6 @@ exports.editar = async (req, res) => {
       return res.status(403).json({ error: 'Você não tem permissão para editar esta resposta' });
     }
 
-    // Atualiza a resposta
     await pool.query(
       'UPDATE respostas_chamado SET mensagem = ? WHERE id = ?',
       [mensagem, id]
