@@ -17,13 +17,16 @@ router.get('/recebidos', auth, checkPerfil([2]), chamadoController.listarRecebid
 // Listar todos os chamados (Comando)
 router.get('/todos', auth, checkPerfil([3]), chamadoController.listarTodos);
 
+// Filtrar chamados
+router.get('/filtro', auth, chamadoController.filtrar);
+
 // Atualizar status do chamado (Técnico ou criador)
 router.put('/:id/status', auth, chamadoController.atualizarStatus);
 
-// Atribuir chamado a outro usuário (com validações)
-// router.put('/:id/atribuir', auth, chamadoController.atribuir);
-
 // Ver detalhes do chamado
 router.get('/:id', auth, chamadoController.detalhes);
+
+// Excluir chamado (criador ou Comando)
+router.delete('/:id', auth, chamadoController.excluir);
 
 module.exports = router;

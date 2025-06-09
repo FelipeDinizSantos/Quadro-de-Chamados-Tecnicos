@@ -65,22 +65,6 @@ exports.atualizarStatus = async (req, res) => {
   }
 };
 
-// Atribuir chamado a outro usuário
-// exports.atribuir = async (req, res) => {
-//   const { id } = req.params;
-//   const { atribuido_para } = req.body;
-
-//   try {
-//     await pool.query(
-//       'UPDATE chamados SET atribuido_para = ?, atualizado_em = NOW() WHERE id = ?',
-//       [atribuido_para, id]
-//     );
-//     res.json({ message: 'Chamado atribuído com sucesso' });
-//   } catch (err) {
-//     res.status(500).json({ error: 'Erro ao atribuir chamado' });
-//   }
-// };
-
 // Detalhes do chamado
 exports.detalhes = async (req, res) => {
   const { id } = req.params;
@@ -96,5 +80,76 @@ exports.detalhes = async (req, res) => {
     res.json({ chamado, respostas });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao buscar detalhes do chamado' });
+  }
+};
+
+// Excluir chamado  
+exports.excluir = async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  const userPerfil = req.user.perfil_id;
+
+  try {
+    const [[chamado]] = await pool.query('SELECT criado_por FROM chamados WHERE id = ?', [id]);
+
+    if (!chamado) {
+      return res.status(404).json({ error: 'Chamado não encontrado' });
+    }
+
+    if (chamado.criado_por !== userId && userPerfil !== 3) {
+      return res.status(403).json({ error: 'Você não tem permissão para excluir este chamado' });
+    }
+
+    await pool.query('DELETE FROM chamados WHERE id = ?', [id]);
+    res.json({ message: 'Chamado excluído com sucesso' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao excluir chamado' });
+  }
+};
+
+// Filtrar chamados por status, categoria e data
+exports.filtrar = async (req, res) => {
+  const { status, categoria_id, data_inicio, data_fim } = req.query;
+  const user = req.user;
+
+  try {
+    let query = 'SELECT * FROM chamados WHERE 1=1';
+    const params = [];
+
+    // Filtros 
+    if (status) {
+      query += ' AND status = ?';
+      params.push(status);
+    }
+
+    if (categoria_id) {
+      query += ' AND categoria_id = ?';
+      params.push(categoria_id);
+    }
+
+    if (data_inicio) {
+      query += ' AND DATE(criado_em) >= ?';
+      params.push(data_inicio);
+    }
+
+    if (data_fim) {
+      query += ' AND DATE(criado_em) <= ?';
+      params.push(data_fim);
+    }
+
+    // Restrições por perfil
+    if (user.perfil_id === 1) {
+      query += ' AND criado_por = ?';
+      params.push(user.id);
+    } else if (user.perfil_id === 2) {
+      query += ' AND atribuido_funcao_tecnica_id = ?';
+      params.push(user.funcao_tecnica_id);
+    }
+    // Comando (perfil_id === 3) vê tudo
+
+    const [result] = await pool.query(query, params);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao filtrar chamados' });
   }
 };
