@@ -8,13 +8,12 @@ const checkPerfil = require('../middlewares/checkPerfil');
 router.put('/me', auth, usuarioController.atualizarPerfil);
 router.get('/me', auth, usuarioController.perfil);
 
-router.delete('/:id', auth, checkPerfil([3]), usuarioController.excluirUsuario);
-router.put('/:id/rebaixar', auth, checkPerfil([3]), usuarioController.rebaixarParaOM);
-router.put('/:id/atribuir-funcao', auth, checkPerfil([3]), usuarioController.atribuirFuncaoTecnica); 
-router.get('/', auth, checkPerfil([3]), usuarioController.listarPorPerfil);
-router.get('/', auth, checkPerfil([3]), usuarioController.listarTodos);
+router.delete('/:id', auth, checkPerfil([3, 4]), usuarioController.excluirUsuario);
+router.put('/:id/rebaixar', auth, checkPerfil([3, 4]), usuarioController.rebaixarParaOM);
+router.put('/:id/atribuir-funcao', auth, checkPerfil([3, 4]), usuarioController.atribuirFuncaoTecnica); 
+router.get('/', auth, checkPerfil([3, 4]), usuarioController.listarPorPerfil);
+router.get('/', auth, checkPerfil([3, 4]), usuarioController.listarTodos);
 
-router.get('/admin', auth, checkPerfil([3]), (req, res) => res.json({ mensagem: 'Acesso autorizado para perfil Comando' }));
-router.get('/:id', auth, checkPerfil([3]), usuarioController.buscarPorId);
+router.get('/:id', auth, checkPerfil([3, 4]), usuarioController.buscarPorId);
 
 module.exports = router;

@@ -14,10 +14,10 @@ router.get('/meus', auth, chamadoController.listarMeus);
 // Listar chamados atribuídos (Técnico)
 router.get('/recebidos', auth, checkPerfil([2]), chamadoController.listarRecebidos);
 
-// Listar todos os chamados (Comando)
-router.get('/todos', auth, checkPerfil([3]), chamadoController.listarTodos);
+// Listar todos os chamados (Comando / adm)
+router.get('/todos', auth, checkPerfil([3, 4]), chamadoController.listarTodos);
 
-// Filtrar chamados
+// Filtrar chamados (Controle de acesso feito diretamente na função)
 router.get('/filtro', auth, chamadoController.filtrar);
 
 // Atualizar status do chamado (Técnico ou criador)
@@ -26,7 +26,7 @@ router.put('/:id/status', auth, chamadoController.atualizarStatus);
 // Ver detalhes do chamado
 router.get('/:id', auth, chamadoController.detalhes);
 
-// Excluir chamado (criador ou Comando)
+// Excluir chamado (criador, Comando e adm)
 router.delete('/:id', auth, chamadoController.excluir);
 
 module.exports = router;
