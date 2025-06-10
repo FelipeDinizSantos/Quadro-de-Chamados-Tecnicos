@@ -4,8 +4,11 @@ const router = express.Router();
 const auth = require('../middlewares/auth');
 const checkPerfil = require('../middlewares/checkPerfil');
 
-const categoriasController = require('../controllers/categoriasController');
+const categoriaController = require('../controllers/categoria.controller');
 
-router.get('/', auth, categoriasController.listarCategorias);
+router.delete('/:id', auth, checkPerfil([3, 4]), categoriaController.excluirCategoria);
+router.put('/:id', auth, checkPerfil([3, 4]), categoriaController.editarCategoria);
+router.get('/', auth, categoriaController.listarCategorias);
+router.post('/', auth, checkPerfil([3, 4]), categoriaController.criarCategoria);
 
 module.exports = router;
