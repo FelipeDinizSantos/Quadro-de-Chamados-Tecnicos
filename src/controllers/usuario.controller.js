@@ -2,6 +2,8 @@ const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authConfig = require('../config/auth');
+const { logAtividade } = require('../services/log.service');
+
 require('dotenv').config();
 
 exports.registrar = async (req, res) => {
@@ -19,11 +21,15 @@ exports.registrar = async (req, res) => {
 
     const senha_hash = await bcrypt.hash(senha, 10);
 
-    await pool.query(
+    // Cadastro padrão como usuário OM = perfil_id 1 
+    const result = await pool.query(
       'INSERT INTO usuarios (nome, email, senha_hash, perfil_id) VALUES (?, ?, ?, ?)',
-      [nome, email, senha_hash, 1] // 1 = Usuário OM
+      [nome, email, senha_hash, 1]
     );
 
+    const novoUsuarioId = result.insertId;
+
+    await logAtividade(novoUsuarioId, 'usuario_registrado', `IP: ${req.ip}`);
     res.status(201).json({ message: 'Usuário registrado com sucesso.' });
   } catch (err) {
     console.error(err);
@@ -45,12 +51,14 @@ exports.login = async (req, res) => {
     );
 
     if (!usuario) {
+      await logAtividade(usuario.id, 'login_sucesso', `IP: ${req.ip} \n Erro: Credenciais inválidas`);
       return res.status(400).json({ error: 'Credenciais inválidas.' });
     }
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
 
     if (!senhaValida) {
+      await logAtividade(usuario.id, 'login_falha', `IP: ${req.ip} \n Erro: Credenciais inválidas`);
       return res.status(400).json({ error: 'Credenciais inválidas.' });
     }
 
@@ -65,9 +73,10 @@ exports.login = async (req, res) => {
       expiresIn: authConfig.expiresIn
     });
 
+    await logAtividade(usuario.id, 'Login realizado', `IP: ${req.ip}`);
     res.json({ token });
   } catch (err) {
-    console.error(err);
+    await logAtividade(usuario.id, 'Tentativa de login', `IP: ${req.ip} \n Erro: ${err.message}`);
     res.status(500).json({ error: 'Erro ao realizar login.' });
   }
 };
@@ -138,6 +147,7 @@ exports.atualizarPerfil = async (req, res) => {
       valores
     );
 
+    await logAtividade(id, 'usuario_editado', `IP: ${req.ip} \n Campos Editados: ${JSON.stringify(req.body)}`);
     res.json({ message: 'Perfil atualizado com sucesso' });
   } catch (err) {
     console.error(err);
@@ -270,7 +280,7 @@ exports.buscarPorId = async (req, res) => {
 };
 
 exports.atribuirFuncaoTecnica = async (req, res) => {
-  const { id } = req.params; 
+  const { id } = req.params;
   const { funcao_tecnica_id } = req.body;
 
   try {
@@ -303,6 +313,7 @@ exports.atribuirFuncaoTecnica = async (req, res) => {
       [funcao_tecnica_id, id]
     );
 
+    await logAtividade(req.user.id, 'usuario_promovido', `Usuário com ID ${usuario.id}, foi promovido a Técnico pelo usuário de ID ${req.user.id}.`);
     res.json({ message: 'Função técnica atribuída com sucesso. Usuário promovido a Técnico.' });
   } catch (err) {
     console.error(err);
@@ -334,6 +345,7 @@ exports.rebaixarParaOM = async (req, res) => {
       [id]
     );
 
+    await logAtividade(req.user.id, 'usuario_rebaixado', `Usuário Técnico com ID ${id} foi rebaixado para usuário OM pelo usuário de ID ${req.user.id}.`);
     res.json({ message: 'Usuário rebaixado com sucesso para OM. Função técnica removida.' });
   } catch (err) {
     console.error(err);
@@ -395,6 +407,7 @@ exports.excluirUsuario = async (req, res) => {
     // Executa a exclusão
     await pool.query(`DELETE FROM usuarios WHERE id = ?`, [id]);
 
+    await logAtividade(comandoId, 'usuario_excluido', `Usuário com ID ${id} foi excluído pelo usuário ${req.user.nome}.`);
     res.json({ message: 'Usuário excluído com sucesso' });
   } catch (err) {
     console.error(err);

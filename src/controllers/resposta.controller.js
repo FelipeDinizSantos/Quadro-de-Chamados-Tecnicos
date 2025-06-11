@@ -1,6 +1,6 @@
 const pool = require('../config/db');
+const { logAtividade } = require('../services/log.service');
 
-// Criar resposta para um chamado
 exports.responder = async (req, res) => {
   const { chamado_id } = req.params;
   const { mensagem } = req.body;
@@ -26,13 +26,13 @@ exports.responder = async (req, res) => {
       [chamado_id, autor_id, mensagem]
     );
 
+    await logAtividade(req.user.id, 'resposta_chamado', `Resposta registrada para o chamado ${chamado_id} por ${req.user.nome} (${req.user.email}) \n Mensagem: ${mensagem}` );
     res.status(201).json({ message: 'Resposta registrada com sucesso' });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao registrar resposta' });
   }
 };
 
-// Listar respostas de um chamado
 exports.listar = async (req, res) => {
   const { chamado_id } = req.params;
 
@@ -52,7 +52,6 @@ exports.listar = async (req, res) => {
   }
 };
 
-// Editar uma resposta existente
 exports.editar = async (req, res) => {
   const { id } = req.params; 
   const { mensagem } = req.body;

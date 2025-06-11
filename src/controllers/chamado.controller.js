@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const { logAtividade } = require('../services/log.service');
 
 // Criar chamado
 exports.criar = async (req, res) => {
@@ -6,10 +7,12 @@ exports.criar = async (req, res) => {
   const criado_por = req.user.id;
 
   try {
-    await pool.query(
+    const chamadoCriado = await pool.query(
       'INSERT INTO chamados (titulo, descricao, categoria_id, criado_por, atribuido_funcao_tecnica_id) VALUES (?, ?, ?, ?, ?)',
       [titulo, descricao, categoria_id, criado_por, atribuido_funcao_tecnica_id]
     );
+
+    await logAtividade(req.user.id, 'chamado_criado', `ID: ${chamadoCriado.insertId} \n Titulo: ${titulo} \n Descrição: ${descricao}`)
     res.status(201).json({ message: 'Chamado criado com sucesso' });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao criar chamado' });
@@ -59,6 +62,8 @@ exports.atualizarStatus = async (req, res) => {
       'UPDATE chamados SET status = ?, atualizado_em = NOW() WHERE id = ?',
       [status, id]
     );
+
+    await logAtividade(req.user.id, 'chamado_status_atualizado', `Novo status: ${status} \n ID do chamado: ${id}`)
     res.json({ message: 'Status atualizado com sucesso' });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao atualizar status do chamado' });
