@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authConfig = require('../config/auth');
 const { logAtividade } = require('../services/log.service');
+const req = require('express/lib/request');
 
 require('dotenv').config();
 
@@ -27,7 +28,7 @@ exports.registrar = async (req, res) => {
       [nome, email, senha_hash, 1]
     );
 
-    const novoUsuarioId = result.insertId;
+    const novoUsuarioId = [result][0][0].insertId;
 
     await logAtividade(novoUsuarioId, 'usuario_registrado', `IP: ${req.ip}`);
     res.status(201).json({ message: 'Usuário registrado com sucesso.' });
@@ -51,7 +52,7 @@ exports.login = async (req, res) => {
     );
 
     if (!usuario) {
-      await logAtividade(usuario.id, 'login_sucesso', `IP: ${req.ip} \n Erro: Credenciais inválidas`);
+      await logAtividade(usuario.id, 'login_falha', `IP: ${req.ip} \n Erro: Credenciais inválidas`);
       return res.status(400).json({ error: 'Credenciais inválidas.' });
     }
 
@@ -73,7 +74,7 @@ exports.login = async (req, res) => {
       expiresIn: authConfig.expiresIn
     });
 
-    await logAtividade(usuario.id, 'Login realizado', `IP: ${req.ip}`);
+    await logAtividade(usuario.id, 'login_sucesso', `IP: ${req.ip} \n Erro: Credenciais inválidas`);
     res.json({ token });
   } catch (err) {
     await logAtividade(usuario.id, 'Tentativa de login', `IP: ${req.ip} \n Erro: ${err.message}`);
@@ -353,6 +354,67 @@ exports.rebaixarParaOM = async (req, res) => {
   }
 };
 
+exports.rebaixarComando = async (req, res) => {
+  const { id } = req.params;
+
+  // ID do perfil qual o usuário será rebaixado
+  let { perfil_id, funcao_tecnica_id } = req.body;
+
+  perfil_id = parseInt(perfil_id);
+
+  try {
+    const [[usuario]] = await pool.query(
+      `SELECT id, perfil_id FROM usuarios WHERE id = ?`,
+      [id]
+    );
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (perfil_id > 2) {
+      return res.status(400).json({ error: 'Não é possivel rebaixar o usuário para um perfil diferente de Técnico ou OM' });
+    }
+
+    if (perfil_id == 2) {
+      if (!funcao_tecnica_id) {
+        return res.status(400).json({ error: 'Função técnica é obrigatória para rebaixar o usuário para Técnico' });
+      }
+
+      const [[funcao]] = await pool.query(
+        `SELECT id FROM funcoes_tecnicas WHERE id = ?`,
+        [funcao_tecnica_id]
+      );
+
+      if (!funcao) {
+        return res.status(400).json({ error: 'Função técnica não encontrada para este usuário' });
+      }
+
+      await pool.query(
+        ` UPDATE usuarios
+          SET perfil_id = 2, funcao_tecnica_id = ?
+          WHERE id = ?`,
+        [funcao_tecnica_id, id]
+      );
+    }
+    
+    if (perfil_id === 1) {
+      await pool.query(
+        ` UPDATE usuarios
+          SET perfil_id = 1
+          WHERE id = ?`,
+        [id]
+      );
+    }
+
+    await logAtividade(req.user.id, 'comando_rebaixado', `Usuário Comando com ID ${id} foi rebaixado para ${perfil_id === 1 ? 'usuário OM' : 'usuário Técnico'} pelo administrador de ID ${req.user.id}.`);
+    res.json({ message: 'Usuário Comando rebaixado com successo' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao rebaixar o usuário' });
+  }
+}
+
 exports.listarPorPerfil = async (req, res) => {
   try {
     const comandoId = req.user.id;
@@ -384,6 +446,38 @@ exports.listarPorPerfil = async (req, res) => {
     res.status(500).json({ error: 'Erro ao filtrar usuários por perfil' });
   }
 };
+
+exports.atribuirFuncaoComando = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [[usuario]] = await pool.query(
+      `SELECT id, perfil_id FROM usuarios WHERE id = ?`,
+      [id]
+    );
+
+    if (!usuario) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (usuario.perfil_id === 3 || usuario.perfil_id === 4) {
+      return res.status(400).json({ error: 'Apenas usuários Técnicos ou OM podem ser promovidos a Comando' });
+    }
+
+    await pool.query(
+      `UPDATE usuarios
+       SET perfil_id = 3, funcao_tecnica_id = null 
+       WHERE id = ?`,
+      [id]
+    );
+
+    await logAtividade(req.user.id, 'usuario_promovido_comando', `Usuário com ID ${usuario.id}, foi promovido a Comando pelo administrador de ID ${req.user.id}.`);
+    res.json({ message: 'Função Comando atribuída com sucesso. Usuário promovido a Comando.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao atribuir função Comando' });
+  }
+}
 
 exports.excluirUsuario = async (req, res) => {
   try {
