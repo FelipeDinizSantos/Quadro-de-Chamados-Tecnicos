@@ -78,7 +78,13 @@ exports.listarRecebidos = async (req, res) => {
     const tecnicoId = req.user.id;
 
     const [chamados] = await pool.query(
-      'SELECT * FROM chamados WHERE atribuido_usuario_id = ?',
+      `SELECT 
+        c.*, 
+        u.nome AS nome_criador, 
+        u.email AS email_criador
+      FROM chamados c
+      JOIN usuarios u ON c.criado_por = u.id
+      WHERE c.atribuido_usuario_id = ?`,
       [tecnicoId]
     );
 
@@ -123,7 +129,24 @@ exports.detalhes = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const [[chamado]] = await pool.query('SELECT * FROM chamados WHERE id = ?', [id]);
+    const [[chamado]] = await pool.query(`
+    SELECT
+      c.id,
+      c.titulo,
+      c.descricao,
+      c.status,
+      c.criado_em,
+      cat.nome AS categoria_nome,
+      ft.nome AS funcao_tecnica_nome,
+      u.id AS tecnico_id,
+      u.nome AS tecnico_nome,
+      u.email AS tecnico_email
+      FROM chamados c
+      LEFT JOIN categorias_chamado cat ON c.categoria_id = cat.id
+      LEFT JOIN funcoes_tecnicas ft ON c.atribuido_funcao_tecnica_id = ft.id
+      LEFT JOIN usuarios u ON c.atribuido_usuario_id = u.id
+      WHERE c.id = ?  
+    `, [id]);
 
     const [respostas] = await pool.query(
       'SELECT r.*, u.nome as autor_nome FROM respostas_chamado r JOIN usuarios u ON r.autor_id = u.id WHERE chamado_id = ?',
