@@ -15,6 +15,7 @@ router.put('/:id/rebaixar-comando', auth, checkPerfil([4]), usuarioController.re
 router.put('/:id/atribuir-funcao', auth, checkPerfil([3, 4]), usuarioController.atribuirFuncaoTecnica);
 router.get('/', auth, checkPerfil([3, 4]), usuarioController.listarPorPerfil);
 router.get('/', auth, checkPerfil([3, 4]), usuarioController.listarTodos);
+router.get('/usuarios-tecnicos-por-funcao', auth, usuarioController.listarUsuariosTecnicosPorFuncao);
 
 router.get('/:id', auth, checkPerfil([3, 4]), usuarioController.buscarPorId);
 

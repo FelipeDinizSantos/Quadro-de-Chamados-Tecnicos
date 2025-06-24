@@ -52,14 +52,14 @@ exports.login = async (req, res) => {
     );
 
     if (!usuario) {
-      await logAtividade(usuario.id, 'login_falha', `IP: ${req.ip} \n Erro: Credenciais inválidas`);
+      await logAtividade(0, 'login_falha', `IP: ${req.ip} \n Erro: Credenciais inválidas`);
       return res.status(400).json({ error: 'Credenciais inválidas.' });
     }
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
 
     if (!senhaValida) {
-      await logAtividade(usuario.id, 'login_falha', `IP: ${req.ip} \n Erro: Credenciais inválidas`);
+      await logAtividade(0, 'login_falha', `IP: ${req.ip} \n Erro: Credenciais inválidas`);
       return res.status(400).json({ error: 'Credenciais inválidas.' });
     }
 
@@ -77,7 +77,7 @@ exports.login = async (req, res) => {
     await logAtividade(usuario.id, 'login_sucesso', `IP: ${req.ip} \n Erro: Credenciais inválidas`);
     res.json({ token });
   } catch (err) {
-    await logAtividade(usuario.id, 'Tentativa de login', `IP: ${req.ip} \n Erro: ${err.message}`);
+    await logAtividade(0, 'Tentativa de login', `IP: ${req.ip} \n Erro: ${err.message}`);
     res.status(500).json({ error: 'Erro ao realizar login.' });
   }
 };
@@ -397,7 +397,7 @@ exports.rebaixarComando = async (req, res) => {
         [funcao_tecnica_id, id]
       );
     }
-    
+
     if (perfil_id === 1) {
       await pool.query(
         ` UPDATE usuarios
@@ -506,5 +506,37 @@ exports.excluirUsuario = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao excluir usuário' });
+  }
+};
+
+// Listar usuários técnicos por função técnica
+exports.listarUsuariosTecnicosPorFuncao = async (req, res) => {
+  const { funcao_tecnica_id } = req.query;
+
+  if (!funcao_tecnica_id) {
+    return res.status(400).json({ error: 'Parâmetro funcao_tecnica_id é obrigatório.' });
+  }
+
+  try {
+    const [perfilTecnico] = await pool.query(
+      'SELECT id FROM perfis WHERE nome = "Usuário Técnico"'
+    );
+
+    if (perfilTecnico.length === 0) {
+      return res.status(500).json({ error: 'Perfil técnico não encontrado no banco.' });
+    }
+
+    const perfilTecnicoId = perfilTecnico[0].id;
+
+    // Busca usuários técnicos que tenham a função técnica passada
+    const [usuarios] = await pool.query(
+      'SELECT id, nome, email FROM usuarios WHERE perfil_id = ? AND funcao_tecnica_id = ?',
+      [perfilTecnicoId, funcao_tecnica_id]
+    );
+
+    res.json(usuarios);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao buscar usuários técnicos.' });
   }
 };
