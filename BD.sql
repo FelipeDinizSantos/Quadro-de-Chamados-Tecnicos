@@ -58,10 +58,12 @@ CREATE TABLE chamados (
     criado_por INT NOT NULL,
     `status` ENUM('aberto', 'em_andamento', 'concluido', 'fechado') DEFAULT 'aberto',
     atribuido_funcao_tecnica_id INT DEFAULT NULL,
+    atribuido_usuario_id INT DEFAULT NULL,  -- Novo campo para o técnico específico
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
     atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (categoria_id) REFERENCES categorias_chamado(id),
     FOREIGN KEY (atribuido_funcao_tecnica_id) REFERENCES funcoes_tecnicas(id),
+    FOREIGN KEY (atribuido_usuario_id) REFERENCES usuarios(id),  
     FOREIGN KEY (criado_por) REFERENCES usuarios(id)
 );
 
