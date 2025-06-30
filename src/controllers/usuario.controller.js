@@ -156,11 +156,12 @@ exports.atualizarPerfil = async (req, res) => {
   }
 };
 
-exports.listarTodos = async (req, res) => {
+exports.listar = async (req, res) => {
   try {
     const comandoId = req.user.id;
+    const { perfil } = req.query;
 
-    const [usuarios] = await pool.query(`
+    let sql = `
       SELECT u.id, u.nome, u.email, u.perfil_id, p.nome AS perfil_nome,
              u.funcao_tecnica_id, f.nome AS funcao_tecnica_nome,
              u.criado_em
@@ -168,7 +169,25 @@ exports.listarTodos = async (req, res) => {
       JOIN perfis p ON u.perfil_id = p.id
       LEFT JOIN funcoes_tecnicas f ON u.funcao_tecnica_id = f.id
       WHERE u.id != ?
-    `, [comandoId]);
+    `;
+    const params = [comandoId];
+
+    if (perfil) {
+      let perfilId;
+      if (perfil === 'om') {
+        perfilId = 1;
+      } else if (perfil === 'tecnico') {
+        perfilId = 2;
+      } else {
+        return res.status(400).json({
+          error: 'Parâmetro de perfil inválido. Use "om" ou "tecnico".'
+        });
+      }
+      sql += ' AND u.perfil_id = ?';
+      params.push(perfilId);
+    }
+
+    const [usuarios] = await pool.query(sql, params);
 
     res.json(usuarios);
   } catch (err) {
@@ -415,38 +434,6 @@ exports.rebaixarComando = async (req, res) => {
   }
 }
 
-exports.listarPorPerfil = async (req, res) => {
-  try {
-    const comandoId = req.user.id;
-    const { perfil } = req.query;
-
-    let perfilId;
-    if (perfil === 'om') {
-      perfilId = 1;
-    } else if (perfil === 'tecnico') {
-      perfilId = 2;
-    } else {
-      return res.status(400).json({ error: 'Parâmetro de perfil inválido. Use "om" ou "tecnico".' });
-    }
-
-    const [usuarios] = await pool.query(
-      `SELECT u.id, u.nome, u.email, u.perfil_id, p.nome AS perfil_nome,
-              u.funcao_tecnica_id, f.nome AS funcao_tecnica_nome,
-              u.criado_em
-       FROM usuarios u
-       JOIN perfis p ON u.perfil_id = p.id
-       LEFT JOIN funcoes_tecnicas f ON u.funcao_tecnica_id = f.id
-       WHERE u.perfil_id = ? AND u.id != ?`,
-      [perfilId, comandoId]
-    );
-
-    res.json(usuarios);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Erro ao filtrar usuários por perfil' });
-  }
-};
-
 exports.atribuirFuncaoComando = async (req, res) => {
   const { id } = req.params;
 
@@ -538,5 +525,19 @@ exports.listarUsuariosTecnicosPorFuncao = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao buscar usuários técnicos.' });
+  }
+};
+
+exports.contarUsuariosHoje = async (req, res) => {
+  try {
+    const [result] = await pool.query(`
+      SELECT COUNT(*) as total
+      FROM usuarios
+      WHERE DATE(criado_em) = CURDATE()
+    `);
+    
+    res.json({ total: result[0].total });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao contar usuários de hoje' });
   }
 };

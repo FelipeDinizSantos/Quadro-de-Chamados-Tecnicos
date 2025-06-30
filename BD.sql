@@ -1,29 +1,28 @@
 CREATE DATABASE projeto_EB;
 USE projeto_EB;
 
--- Tabela de perfis de usuário
 CREATE TABLE perfis (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(50) NOT NULL 
 );
 
 INSERT INTO perfis (nome) VALUES 
-	("Usuário da OM"),
-    ("Usuário Técnico"),
-	("Usuário Comando"),
-    ("admin");
+    ('Usuário da OM'),
+    ('Usuário Técnico'),
+    ('Usuário Comando'),
+    ('admin');
 
 -- Tabela de funções técnicas
 CREATE TABLE funcoes_tecnicas (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL UNIQUE 
+    nome VARCHAR(100) NOT NULL UNIQUE
 );
 
 INSERT INTO funcoes_tecnicas (nome) VALUES
-('Chefe COAL'),
-('Cmt Pelotão'),
-('Especialista Técnico'),
-('Chefe de Seção');
+    ('Chefe COAL'),
+    ('Cmt Pelotão'),
+    ('Especialista Técnico'),
+    ('Chefe de Seção');
 
 -- Tabela de usuários
 CREATE TABLE usuarios (
@@ -41,13 +40,13 @@ CREATE TABLE usuarios (
 -- Tabela de categorias de chamados
 CREATE TABLE categorias_chamado (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL 
+    nome VARCHAR(100) NOT NULL
 );
 
-INSERT INTO categorias_chamado (nome) VALUES 
-	("Dúvida Técnica"),
-    ("Solicitação de Valores"),
-    ("Orientação Técnica");
+INSERT INTO categorias_chamado (nome) VALUES
+    ('Dúvida Técnica'),
+    ('Solicitação de Valores'),
+    ('Orientação Técnica');
 
 -- Tabela de chamados
 CREATE TABLE chamados (
@@ -58,32 +57,32 @@ CREATE TABLE chamados (
     criado_por INT NOT NULL,
     `status` ENUM('aberto', 'em_andamento', 'concluido', 'fechado') DEFAULT 'aberto',
     atribuido_funcao_tecnica_id INT DEFAULT NULL,
-    atribuido_usuario_id INT DEFAULT NULL,  -- Novo campo para o técnico específico
+    atribuido_usuario_id INT DEFAULT NULL,
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
     atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (categoria_id) REFERENCES categorias_chamado(id),
+    FOREIGN KEY (criado_por) REFERENCES usuarios(id),
     FOREIGN KEY (atribuido_funcao_tecnica_id) REFERENCES funcoes_tecnicas(id),
-    FOREIGN KEY (atribuido_usuario_id) REFERENCES usuarios(id),  
-    FOREIGN KEY (criado_por) REFERENCES usuarios(id)
+    FOREIGN KEY (atribuido_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
 );
 
 -- Tabela de mensagens/respostas nos chamados
 CREATE TABLE respostas_chamado (
     id INT AUTO_INCREMENT PRIMARY KEY,
     chamado_id INT NOT NULL,
-    autor_id INT NOT NULL,
+    autor_id INT DEFAULT NULL,
     mensagem TEXT NOT NULL,
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (chamado_id) REFERENCES chamados(id),
-    FOREIGN KEY (autor_id) REFERENCES usuarios(id)
+    FOREIGN KEY (autor_id) REFERENCES usuarios(id) ON DELETE SET NULL
 );
 
 -- Tabela de auditoria
 CREATE TABLE logs_sistema (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  usuario_id INT NOT NULL,
-  acao VARCHAR(255) NOT NULL,
-  detalhes TEXT,
-  `data` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    acao VARCHAR(255) NOT NULL,
+    detalhes TEXT,
+    `data` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );

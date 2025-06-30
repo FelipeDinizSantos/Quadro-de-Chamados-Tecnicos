@@ -29,4 +29,7 @@ router.get('/:id', auth, chamadoController.detalhes);
 // Excluir chamado (criador, Comando e adm)
 router.delete('/:id', auth, chamadoController.excluir);
 
+router.get('/estatisticas/chamados-hoje', auth, checkPerfil([3, 4]), chamadoController.contarChamadosHoje);
+router.get('/estatisticas/taxa-resolucao', auth, checkPerfil([3, 4]), chamadoController.calcularTaxaResolucao);
+
 module.exports = router;

@@ -98,7 +98,28 @@ exports.listarRecebidos = async (req, res) => {
 // Listar todos os chamados (comando)
 exports.listarTodos = async (req, res) => {
   try {
-    const [chamados] = await pool.query('SELECT * FROM chamados');
+    const [chamados] = await pool.query(`
+      SELECT
+        c.id,
+        c.titulo,
+        c.descricao,
+        c.status,
+        c.criado_em,
+        cat.nome AS categoria_nome,
+        ft.nome AS funcao_tecnica_nome,
+        u.id AS tecnico_id,
+        u.nome AS tecnico_nome,
+        u.email AS tecnico_email,
+        uc.id AS criador_id,
+        uc.nome AS criador_nome,
+        uc.email AS criador_email
+      FROM chamados c
+      LEFT JOIN categorias_chamado cat ON c.categoria_id = cat.id
+      LEFT JOIN funcoes_tecnicas ft ON c.atribuido_funcao_tecnica_id = ft.id
+      LEFT JOIN usuarios u ON c.atribuido_usuario_id = u.id
+      LEFT JOIN usuarios uc ON c.criado_por = uc.id
+      ORDER BY c.criado_em DESC
+      `);
 
     res.json(chamados);
   } catch (err) {
@@ -227,5 +248,48 @@ exports.filtrar = async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: 'Erro ao filtrar chamados' });
+  }
+};
+
+exports.contarChamadosHoje = async (req, res) => {
+  try {
+    const [result] = await pool.query(`
+      SELECT COUNT(*) as total
+      FROM chamados
+      WHERE DATE(criado_em) = CURDATE()
+    `);
+    
+    res.json({ total: result[0].total });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao contar chamados de hoje' });
+  }
+};
+
+// Calcular taxa de resolução de chamados
+exports.calcularTaxaResolucao = async (req, res) => {
+  try {
+    const [result] = await pool.query(`
+      SELECT 
+        COUNT(*) AS total,
+        SUM(CASE WHEN status IN ('concluido', 'fechado') THEN 1 ELSE 0 END) AS resolvidos
+      FROM chamados
+    `);
+
+    const totalChamados = result[0].total;
+    const chamadosResolvidos = result[0].resolvidos;
+    
+    const taxa = totalChamados > 0 
+      ? Math.round((chamadosResolvidos / totalChamados) * 100)
+      : 0;
+
+    res.json({ 
+      taxa,
+      total: totalChamados,
+      resolvidos: chamadosResolvidos,
+      pendentes: totalChamados - chamadosResolvidos
+    });
+  } catch (err) {
+    console.error('Erro ao calcular taxa de resolução:', err);
+    res.status(500).json({ error: 'Erro ao calcular taxa de resolução' });
   }
 };
