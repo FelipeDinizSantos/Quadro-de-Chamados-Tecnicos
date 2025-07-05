@@ -4,7 +4,7 @@ require('dotenv').config();
 
 const auth = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader?.split(' ')[1]; // Formato: Bearer token
+  const token = authHeader?.split(' ')[1]; 
 
   if (!token) return res.status(401).json({ error: 'Token não fornecido' });
 

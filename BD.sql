@@ -31,6 +31,7 @@ CREATE TABLE usuarios (
     email VARCHAR(100) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
     perfil_id INT NOT NULL,
+    esta_deletado BOOLEAN DEFAULT 0
     funcao_tecnica_id INT DEFAULT NULL,
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (perfil_id) REFERENCES perfis(id),

@@ -29,15 +29,20 @@ exports.criar = async (req, res) => {
       [titulo, descricao, categoria_id, criado_por, atribuido_funcao_tecnica_id, atribuido_usuario_id]
     );
 
-    await logAtividade(req.user.id, 'chamado_criado', `ID: ${chamadoCriado.insertId} \n Titulo: ${titulo} \n Descrição: ${descricao}`);
+    const year = new Date().getFullYear();
+    const protocolo = `${String(chamadoCriado.insertId).padStart(6, '0')}-${year}`;
 
+    console.log(await pool.query(
+      `UPDATE chamados SET protocolo=? WHERE id=?`,
+      [protocolo, chamadoCriado.insertId]
+    ));
+    await logAtividade(req.user.id, 'chamado_criado', `ID: ${chamadoCriado.insertId} \n Titulo: ${titulo} \n Descrição: ${descricao}`);
     res.status(201).json({ message: 'Chamado criado com sucesso' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao criar chamado' });
   }
 };
-
 
 // Listar chamados do usuário logado
 exports.listarMeus = async (req, res) => {
@@ -258,7 +263,7 @@ exports.contarChamadosHoje = async (req, res) => {
       FROM chamados
       WHERE DATE(criado_em) = CURDATE()
     `);
-    
+
     res.json({ total: result[0].total });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao contar chamados de hoje' });
@@ -277,12 +282,12 @@ exports.calcularTaxaResolucao = async (req, res) => {
 
     const totalChamados = result[0].total;
     const chamadosResolvidos = result[0].resolvidos;
-    
-    const taxa = totalChamados > 0 
+
+    const taxa = totalChamados > 0
       ? Math.round((chamadosResolvidos / totalChamados) * 100)
       : 0;
 
-    res.json({ 
+    res.json({
       taxa,
       total: totalChamados,
       resolvidos: chamadosResolvidos,

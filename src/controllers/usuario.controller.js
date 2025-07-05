@@ -21,8 +21,6 @@ exports.registrar = async (req, res) => {
     }
 
     const senha_hash = await bcrypt.hash(senha, 10);
-
-    // Cadastro padrão como usuário OM = perfil_id 1 
     const result = await pool.query(
       'INSERT INTO usuarios (nome, email, senha_hash, perfil_id) VALUES (?, ?, ?, ?)',
       [nome, email, senha_hash, 1]
@@ -163,7 +161,7 @@ exports.listar = async (req, res) => {
 
     let sql = `
       SELECT u.id, u.nome, u.email, u.perfil_id, p.nome AS perfil_nome,
-             u.funcao_tecnica_id, f.nome AS funcao_tecnica_nome,
+             u.funcao_tecnica_id, f.nome AS funcao_tecnica_nome, u.esta_deletado AS is_deleted,
              u.criado_em
       FROM usuarios u
       JOIN perfis p ON u.perfil_id = p.id
@@ -204,6 +202,7 @@ exports.buscarPorId = async (req, res) => {
       `SELECT 
          u.id, u.nome, u.email, u.criado_em,
          u.perfil_id, p.nome AS perfil_nome,
+         u.esta_deletado AS is_deleted,
          u.funcao_tecnica_id, f.nome AS funcao_tecnica_nome
        FROM usuarios u
        LEFT JOIN perfis p ON u.perfil_id = p.id
@@ -344,6 +343,15 @@ exports.atribuirFuncaoTecnica = async (req, res) => {
 exports.rebaixarParaOM = async (req, res) => {
   const { id } = req.params;
 
+  const [usuarioLogado] = await pool.query(
+    `SELECT perfil_id FROM usuarios WHERE id = ?`,
+    [req.user.id]
+  )
+
+  if (usuarioLogado[0].perfil_id < 3) {
+    return res.status(400).json({ error: 'Permissão Negada!' });
+  }
+
   try {
     const [[usuario]] = await pool.query(
       `SELECT id, perfil_id FROM usuarios WHERE id = ?`,
@@ -471,6 +479,15 @@ exports.excluirUsuario = async (req, res) => {
     const { id } = req.params;
     const comandoId = req.user.id;
 
+    const [usuarioLogado] = await pool.query(
+      `SELECT perfil_id FROM usuarios WHERE id = ?`,
+      [req.user.id]
+    )
+
+    if (usuarioLogado[0].perfil_id < 3) {
+      return res.status(400).json({ error: 'Permissão Negada!' });
+    }
+
     if (parseInt(id) === comandoId) {
       return res.status(400).json({ error: 'Você não pode excluir a si mesmo.' });
     }
@@ -486,7 +503,7 @@ exports.excluirUsuario = async (req, res) => {
     }
 
     // Executa a exclusão
-    await pool.query(`DELETE FROM usuarios WHERE id = ?`, [id]);
+    await pool.query(`UPDATE usuarios SET esta_deletado = 1 WHERE id = ?`, [id]);
 
     await logAtividade(comandoId, 'usuario_excluido', `Usuário com ID ${id} foi excluído pelo usuário ${req.user.nome}.`);
     res.json({ message: 'Usuário excluído com sucesso' });
@@ -535,7 +552,7 @@ exports.contarUsuariosHoje = async (req, res) => {
       FROM usuarios
       WHERE DATE(criado_em) = CURDATE()
     `);
-    
+
     res.json({ total: result[0].total });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao contar usuários de hoje' });
