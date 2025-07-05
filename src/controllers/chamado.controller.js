@@ -24,19 +24,20 @@ exports.criar = async (req, res) => {
       }
     }
 
-    const chamadoCriado = await pool.query(
+    const [result] = await pool.query(
       'INSERT INTO chamados (titulo, descricao, categoria_id, criado_por, atribuido_funcao_tecnica_id, atribuido_usuario_id) VALUES (?, ?, ?, ?, ?, ?)',
       [titulo, descricao, categoria_id, criado_por, atribuido_funcao_tecnica_id, atribuido_usuario_id]
     );
 
     const year = new Date().getFullYear();
-    const protocolo = `${String(chamadoCriado.insertId).padStart(6, '0')}-${year}`;
+    const protocolo = `${String(result.insertId).padStart(6, '0')}-${year}`;
 
-    console.log(await pool.query(
-      `UPDATE chamados SET protocolo=? WHERE id=?`,
-      [protocolo, chamadoCriado.insertId]
-    ));
-    await logAtividade(req.user.id, 'chamado_criado', `ID: ${chamadoCriado.insertId} \n Titulo: ${titulo} \n Descrição: ${descricao}`);
+    await pool.query(
+      'UPDATE chamados SET protocolo = ? WHERE id = ?',
+      [protocolo, result.insertId]
+    );
+    
+    await logAtividade(req.user.id, 'chamado_criado', `ID: ${result.insertId} \n Titulo: ${titulo} \n Descrição: ${descricao}`);
     res.status(201).json({ message: 'Chamado criado com sucesso' });
   } catch (err) {
     console.error(err);
@@ -55,6 +56,7 @@ exports.listarMeus = async (req, res) => {
         c.descricao,
         c.status,
         c.criado_em,
+        c.protocolo, 
         cat.nome AS categoria_nome,
         ft.nome AS funcao_tecnica_nome,
         u.id AS tecnico_id,
@@ -110,6 +112,7 @@ exports.listarTodos = async (req, res) => {
         c.descricao,
         c.status,
         c.criado_em,
+        c.protocolo, 
         cat.nome AS categoria_nome,
         ft.nome AS funcao_tecnica_nome,
         u.id AS tecnico_id,
@@ -161,6 +164,7 @@ exports.detalhes = async (req, res) => {
       c.titulo,
       c.descricao,
       c.status,
+      c.protocolo,
       c.criado_em,
       cat.nome AS categoria_nome,
       ft.nome AS funcao_tecnica_nome,

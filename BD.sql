@@ -57,6 +57,7 @@ CREATE TABLE chamados (
     categoria_id INT NOT NULL,
     criado_por INT NOT NULL,
     `status` ENUM('aberto', 'em_andamento', 'concluido', 'fechado') DEFAULT 'aberto',
+    protcolo VARCHAR(255),
     atribuido_funcao_tecnica_id INT DEFAULT NULL,
     atribuido_usuario_id INT DEFAULT NULL,
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
