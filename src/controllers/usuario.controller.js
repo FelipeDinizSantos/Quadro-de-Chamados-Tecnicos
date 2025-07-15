@@ -14,6 +14,15 @@ exports.registrar = async (req, res) => {
     return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
   }
 
+  // Validação de senha
+  const senhaValida = senha.length >= 8 && /[A-Za-z]/.test(senha) && /[0-9]/.test(senha);
+
+  if (!senhaValida) {
+    return res.status(400).json({
+      error: 'A senha deve ter pelo menos 8 caracteres e conter letras e números.'
+    });
+  }
+
   try {
     const [existe] = await pool.query('SELECT id FROM usuarios WHERE email = ?', [email]);
     if (existe.length > 0) {
