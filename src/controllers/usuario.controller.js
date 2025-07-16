@@ -1,11 +1,19 @@
+
+require('dotenv').config();
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authConfig = require('../config/auth');
 const { logAtividade } = require('../services/log.service');
-const req = require('express/lib/request');
 
-require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
+const nomesInapropriados = JSON.parse(
+  fs.readFileSync(
+    path.join(__dirname, '../utils/nomesInapropriados.json'),
+    'utf-8'
+  )
+);
 
 exports.registrar = async (req, res) => {
   const { nome, email, senha } = req.body;
@@ -14,7 +22,23 @@ exports.registrar = async (req, res) => {
     return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
   }
 
-  // Validação de senha
+  const nomeMinusculo = nome.toLowerCase();
+  const emailMinusculo = email.toLowerCase();
+
+  const contemInapropriadoNome = nomesInapropriados.some((palavra) =>
+    nomeMinusculo.includes(palavra)
+  );
+
+  const contemInapropriadoEmail = nomesInapropriados.some((palavra) =>
+    emailMinusculo.includes(palavra)
+  );
+
+  if (contemInapropriadoNome || contemInapropriadoEmail) {
+    return res.status(400).json({
+      error: 'Erro durante o registro.'
+    });
+  }
+  
   const senhaValida = senha.length >= 8 && /[A-Za-z]/.test(senha) && /[0-9]/.test(senha);
 
   if (!senhaValida) {
@@ -81,7 +105,7 @@ exports.login = async (req, res) => {
       expiresIn: authConfig.expiresIn
     });
 
-    await logAtividade(usuario.id, 'login_sucesso', `IP: ${req.ip} \n Erro: Credenciais inválidas`);
+    await logAtividade(usuario.id, 'login_sucesso', 'Login realizado com sucesso.');
     res.json({ token });
   } catch (err) {
     await logAtividade(0, 'Tentativa de login', `IP: ${req.ip} \n Erro: ${err.message}`);
@@ -522,7 +546,6 @@ exports.excluirUsuario = async (req, res) => {
   }
 };
 
-// Listar usuários técnicos por função técnica
 exports.listarUsuariosTecnicosPorFuncao = async (req, res) => {
   const { funcao_tecnica_id } = req.query;
 
