@@ -121,7 +121,8 @@ exports.perfil = async (req, res) => {
       `SELECT 
          u.id, u.nome, u.email, u.criado_em,
          u.perfil_id, p.nome AS perfil_nome,
-         u.funcao_tecnica_id, f.nome AS funcao_tecnica_nome
+         u.funcao_tecnica_id, f.nome AS funcao_tecnica_nome,
+         u.email_verificado 
        FROM usuarios u
        LEFT JOIN perfis p ON u.perfil_id = p.id
        LEFT JOIN funcoes_tecnicas f ON u.funcao_tecnica_id = f.id
